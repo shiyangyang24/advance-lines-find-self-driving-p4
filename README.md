@@ -116,7 +116,10 @@ def birds_eye(img, mtx, dist):
  ![image](https://github.com/shiyangyang24/advance-lines-find-self-driving-p4/blob/master/Images/warp%20image.png?raw=true)
 
 4 Locate the Lane Lines and Fit a Polynomial
- implement sliding windows and fit a polynomial:First determine the approximate position of the left and right lane lines. This step is very simple. You only need to add the pixels in the picture along the y-axis to find the peaks around the middle point of the picture, that is, the possible area of the lane line, and then use it from the bottom up. Sliding window, calculate the non-zero pixel in the window. If the number of pixels is greater than a certain threshold, the average of these points is used as the center of the next sliding window.let's visualize the result here as well:
+ implement sliding windows and fit a polynomial:First determine the approximate position of the left and right lane lines. This step is very simple. You only need to add the pixels in the picture along the y-axis to find the peaks around the middle point of the picture, that is, the possible area of the lane line, and then use it from the bottom up. Sliding window, calculate the non-zero pixel in the window. If the number of pixels is greater than a certain threshold, the average of these points is used as the center of the next sliding window.
+ Fit a second order polynomial to each lane line:https://classroom.udacity.com/nanodegrees/nd013/parts/fbf77062-5703-404e-b60c-95b78b2f3f9e/modules/2b62a1c3-e151-4a0e-b6b6-e424fa46ceab/lessons/096009a1-3d76-4290-92f3-055961019d5e/concepts/2f928913-21f6-4611-9055-01744acc344f
+ ![image](https://github.com/shiyangyang24/advance-lines-find-self-driving-p4/blob/master/color-fit-lines.jpg?raw=true)
+ let's visualize the result here as well:
  ![image](https://github.com/shiyangyang24/advance-lines-find-self-driving-p4/blob/master/Images/poly.image?raw=true)
 
 
