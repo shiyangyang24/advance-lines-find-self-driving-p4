@@ -1,45 +1,46 @@
 this project is for advanced lane find
 
 1.Calibrate the camera:
-# Calibrate Camera Function 
 
-objp = np.zeros((8*11,3), np.float32)
-objp[:,:2] = np.mgrid[0:11, 0:8].T.reshape(-1,2)
+    objp = np.zeros((6*9,3), np.float32)
 
-# Arrays to store object points and image points from all the images.
-objpoints = [] # 3d points in real world space
-imgpoints = [] # 2d points in image plane.
+    objp[:,:2] = np.mgrid[0:9, 0:6].T.reshape(-1,2)
 
-# Make a list of calibration images
-images = glob.glob('camera_cal/*.jpg')
+    objpoints = [] # 3d points in real world space
 
-# Step through the list and search for chessboard corners
-for idx, fname in enumerate(images):
+    imgpoints = [] # 2d points in image plane.
+
+    images = glob.glob('camera_cal/*.jpg')
+
+    for idx, fname in enumerate(images):
+
     img = cv2.imread(fname)
+    
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     img_size = (img.shape[1], img.shape[0])
     # Find the chessboard corners
-    ret, corners = cv2.findChessboardCorners(gray, (11,8), None)
-
-    # If found, add object points, image points
+    
+    ret, corners = cv2.findChessboardCorners(gray, (9,6), None)
     if ret == True:
         objpoints.append(objp)
         imgpoints.append(corners)
-
+        
         # Draw and display the corners
-        cv2.drawChessboardCorners(img, (11,8), corners, ret)
+        cv2.drawChessboardCorners(img, (9,6), corners, ret)
         #write_name = 'corners_found'+str(idx)+'.jpg'
         #cv2.imwrite(write_name, img)
         cv2.imshow('img', img)
         cv2.waitKey(500)
-
-cv2.destroyAllWindows()
-because I use my camera in realistic scene , I use 8x11 board .
+     cv2.destroyAllWindows()
+ I use 6x9 board .the image as follow:
+![image]( https://github.com/shiyangyang24/advance-lines-find-self-driving-p4/blob/master/distort_image.png?raw=true)
+![image](https://github.com/shiyangyang24/advance-lines-find-self-driving-p4/blob/master/undistort_image.png?raw=true)
 
 
 2.combine  color space and gradient thresholding to get the best of both worlds. the code as below:
-def img_threshold(img):
-    """
+
+    def img_threshold(img):
+    
 
     :param img_: Input Image
     :return: Thresholded Image
@@ -48,6 +49,7 @@ def img_threshold(img):
     dst = cv2.undistort(distorted_img, mtx, dist, None, mtx)
     # Pull R
     R = dst[:,:,0]
+    
     
     # Convert to HLS colorspace
     hls = cv2.cvtColor(dst, cv2.COLOR_RGB2HLS).astype(np.float)
@@ -76,9 +78,12 @@ def img_threshold(img):
     combined_binary[((s_binary == 1) & (sxbinary == 1)) | ((sxbinary == 1) & (R_binary == 1))
                      | ((s_binary == 1) & (R_binary == 1))] = 1
     return combined_binary.astype(np.uint8)
+ threshold image as follow:
+ ![image](https://github.com/shiyangyang24/advance-lines-find-self-driving-p4/blob/master/Images/lane_image.png?raw=true)
+ ![image](https://github.com/shiyangyang24/advance-lines-find-self-driving-p4/blob/master/Images/threshold_image.png?raw=true)
+
  
-
-
+ 
 3.Apply a perspective transform, choosing four source points manually,There are many other ways to select source points. For example, many perspective transform algorithms will programmatically detect four source points in an image based on edge or corner detection and analyzing attributes like color and surrounding pixels.next, we convert the four points on the original image to the transformed image .Note that the lanes in the transformed image are parallel.
 
 def birds_eye(img, mtx, dist):
@@ -107,18 +112,24 @@ def birds_eye(img, mtx, dist):
     top_down = cv2.warpPerspective(undist, M, img_size)
 
     return top_down, M
-
+ ![image](https://github.com/shiyangyang24/advance-lines-find-self-driving-p4/blob/master/Images/birds_eye%20image.png?raw=true)
+ ![image](https://github.com/shiyangyang24/advance-lines-find-self-driving-p4/blob/master/Images/warp%20image.png?raw=true)
 
 4 Locate the Lane Lines and Fit a Polynomial
- implement sliding windows and fit a polynomial:First determine the approximate position of the left and right lane lines. This step is very simple. You only need to add the pixels in the picture along the y-axis to find the peaks around the middle point of the picture, that is, the possible area of the lane line, and then use it from the bottom up. Sliding window, calculate the non-zero pixel in the window. If the number of pixels is greater than a certain threshold, the average of these points is used as the center of the next sliding window.
+ implement sliding windows and fit a polynomial:First determine the approximate position of the left and right lane lines. This step is very simple. You only need to add the pixels in the picture along the y-axis to find the peaks around the middle point of the picture, that is, the possible area of the lane line, and then use it from the bottom up. Sliding window, calculate the non-zero pixel in the window. If the number of pixels is greater than a certain threshold, the average of these points is used as the center of the next sliding window.let's visualize the result here as well:
+ ![image](https://github.com/shiyangyang24/advance-lines-find-self-driving-p4/blob/master/Images/poly.image?raw=true)
 
 
 5.draw the lane lines:
-because the lane lines are often lost,draw Lines will first check whether the lines are detected.If not, go back up to First Lines. If they are, we do not have to search the whole image for the lines. We can then draw the lines,as well as detect where the car is in relation to the middle of the lane,and what type of curvature it is driving at.
+According above,the first Lines uses the birds eye image ,creates a histogram of where the binary activations occur,and uses sliding windows along the peak areas to estimate where the lane lines are.
+because the lane lines are often lost,draw lines will first check whether the lines are detected.If not, go back up to first Lines.and resets to using new sliding windows below if upon failing five times in a row. If they are, we do not have to search the whole image for the lines. We can then draw the lines,as well as detect where the car is in relation to the middle of the lane,and what type of curvature it is driving at.
 This part is not my algorithm, it comes from https://github.com/mvirgo/Advanced-Lane-Lines
 
 
-6 Then use the perspective transformation to restore the fitted curve to the original perspective,and the last ,this process is implemented in each frame of the video to detect lane lines.
+6 Calculate the curvature of the lane line,according to some formula that come from https://classroom.udacity.com/nanodegrees/nd013/parts/fbf77062-5703-404e-b60c-95b78b2f3f9e/modules/2b62a1c3-e151-4a0e-b6b6-e424fa46ceab/lessons/096009a1-3d76-4290-92f3-055961019d5e/concepts/2f928913-21f6-4611-9055-01744acc344f
+
+
+7 Then use the perspective transformation to restore the fitted curve to the original perspective,and the last ,this process is implemented in each frame of the video to detect lane lines.
 
 
 
@@ -136,19 +147,16 @@ we need apply another perspective transform,we select the different src and dst 
 
 Need to calibrate the camera and change the area of interest, because the camera is very bad in the first few frames, so we ignore the first few frames:
 
-cap = cv2.VideoCapture(0)
-# Set the camera
-cap.set(cv2.CAP_PROP_FRAME_WIDTH,1280)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT,720)
-       
-
-i=0
-while(cap.isOpened()):
+    cap = cv2.VideoCapture(0)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH,1280)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT,720)
+    i=0
+    while(cap.isOpened()):
 
 
-    ret, frame = cap.read()
-    i=i+1
-    if ret ==True:
+     ret, frame = cap.read()
+     i=i+1
+     if ret ==True:
         if i>40:
             
             hit=process_video(frame)
@@ -161,8 +169,8 @@ while(cap.isOpened()):
        
     else: 
        break
-cap.release()
-cv2.destroyAllWindows()
+    cap.release()
+    cv2.destroyAllWindows()
 
 
 
