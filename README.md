@@ -137,6 +137,8 @@ This part is not my algorithm, it comes from https://github.com/mvirgo/Advanced-
 The result as follow:
 ![image](https://github.com/shiyangyang24/advance-lines-find-self-driving-p4/blob/master/Screenshot%20at%202018-04-04%2017:33:47.png?raw=true)
 
+Disscussion
+Because I am not very familiar with the lane detection algorithm,this solution works bad on challenge_video.mp4.When there is strong light and shadow, the detection of lane lines is very poor,even it may cause the lane line to be lost.Here's where I need to improve,algorithm improvement:when the camera does not detect a lane line, the program will die.What I need to improve is the rationalization of lane lines. When a lane line is detected, the other lane line is automatically found using the parallel line principle and the width of the lane line. When no lane line is detected, the last detected lane line is used.This will not cause the lane line to be lost.The second part I need to improve is the threshold value of the image. When encountering different scenarios, I need to choose the best threshold.
 
 
 
@@ -176,6 +178,8 @@ Need to calibrate the camera and change the area of interest, because the camera
        break
     cap.release()
     cv2.destroyAllWindows()
+    
+    
 
 
 
